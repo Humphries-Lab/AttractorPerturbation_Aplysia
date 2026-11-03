@@ -401,51 +401,6 @@ save(save_path, ...
     'ONSET_RATIO', ...
     '-v7.3');
 
-%% COHORT EXPORT (if needed) - makes this recording poolable by Run_Cohort_Analysis.m
-% Writes '<ID>_results.mat' files in the SAME format as Run_Evoked_Analysis.m,
-% so Run_Cohort_Analysis.m / fn_cohortAnalysis pool sensitization, evoked and
-% attractor recordings in one table with no change to the cohort code.
-COHORT_EXPORT = 'perStimulus';   % <-- pick one:
-%   'perStimulus' : one file per stimulus ('<ID>_S1_results.mat' ... '_S5_'), each
-%                   Baseline vs Evoked_i -> one cohort row per stimulus (sensitization trends)
-%   'firstOnly'   : one file '<ID>_results.mat' from Evoked_1 only -> one row per animal,
-%                   directly comparable with single-P9 Evoked recordings
-%   'off'         : nothing extra (only _results_sensitization.mat is saved)
-COHORT_STIMS = 1:nStim;          % <-- perStimulus only, e.g. [1 5] for first vs last
-
-switch COHORT_EXPORT
-    case 'perStimulus', exp_list = COHORT_STIMS(COHORT_STIMS <= nStim); exp_tag = true;
-    case 'firstOnly',   exp_list = 1;                                   exp_tag = false;
-    otherwise,          exp_list = [];                                  exp_tag = false;
-end
-for i = exp_list
-    ei = [baseline_idx, evoked_idx(i)];            % Baseline + Evoked_i
-    S = struct();
-    S.recording_ID = cfg.recording_ID;
-    if exp_tag, S.recording_ID = sprintf('%s_S%d', cfg.recording_ID, i); end
-    S.fs = cfg.fs;  S.t_P9 = t_P9_all(i);  S.t_end = fileBounds(i+1);
-    S.wins_s = wins_s(ei,:);  S.wins_s_rr = wins_s_rr(ei,:);
-    S.win_labels = {'Baseline','Evoked'};  S.win_labels_rr = {'Baseline','Attractor-evoked'};
-    S.nN = nN;  S.nN_saved = nN;
-    S.t_attractor_onset = t_attractor_onset_all(i);
-    S.onset_detected    = onset_detected_all(i);
-    S.ONSET_RATIO = cfg.ONSET_RATIO;
-    S.WPCA = WPCA(ei);  S.PR_raw = PR_raw(ei);  S.PR_norm = PR_norm(ei);
-    S.WPCA_rr = WPCA_rr(ei);  S.PR_raw_rr = PR_raw_rr(ei);  S.PR_norm_rr = PR_norm_rr(ei);
-    S.align_mat = align_mat(ei,ei);  S.align_mat_rr = align_mat_rr(ei,ei);
-    S.nDims = nDims;  S.nDims_align = nDims;  S.chance_lvl = chance_lvl;
-    S.align_BE = align_mat(ei(1), ei(2));
-    S.align_BE_corrected = (S.align_BE - chance_lvl) / (1 - chance_lvl);
-    S.RQA_ev.RR = ev_recur_density(i);
-    S.epsilon_rr = epsilon_rr;
-    S.pr_t = pr_t;  S.pr_v = pr_v;  S.al_t = al_t;  S.al_v = al_v;
-    S.rr_full_t = [];  S.rr_full_v = [];           % not computed in this pipeline
-    S.onset_win_t = onset_all{i}.win_t;  S.onset_win_v = onset_all{i}.win_v;
-    S.onset_win_v_fixed = onset_all{i}.win_v_fixed;
-    save(fullfile(cfg.RESULTS_DIR, [S.recording_ID '_results.mat']), '-struct', 'S', '-v7.3');
-end
-if ~isempty(exp_list), fprintf('Cohort export (%s): %d file(s) saved\n', COHORT_EXPORT, numel(exp_list)); end
-
 fprintf('\nSaved: %s\nDone.\n', save_path);
 diary off;
 
