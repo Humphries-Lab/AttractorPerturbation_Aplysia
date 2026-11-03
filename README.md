@@ -48,9 +48,8 @@ script that only calls those functions in sequence.
 5. **`Run_Cohort_Analysis.m`** - run this AFTER `Run_Attractor_Analysis.m` or `Run_Evoked_Analysis.m`
    has been run for every animal/recording. Pools all
    `<recording_ID>_results.mat` files into one table for cohort-level
-   statistics - see "Cohort-level analysis" below. Sensitization results
-   (`*_results_sensitization.mat`) have a different variable set and are
-   **not** pooled by this script.
+   statistics. Sensitization results are **not** pooled by this script.
+6. **`Run_Cohort_Analysis_Sensitization.m`** - the dedicated cohort pipeline for repeated-stimulus data. Run this AFTER `Run_Sensitization_Analysis.m`. It pools `*_results_sensitization.mat` files into a wide-format table (one row per recording, with columns for each stimulus) optimized for SPSS/R repeated-measures ANOVA. Generates cohort trend plots tracking motor program identity and complexity across stimuli.
 
 ## Folders
 
@@ -68,10 +67,10 @@ script that only calls those functions in sequence.
   use no real recording data):
   - `Validate_SubspaceAlignment.m`
   - `Validate_RecurrenceDensity.m`
-- **`CohortAnalysis/`** - the function that `Run_Cohort_Analysis.m` calls.
-  Sits outside `Functions/`, like `Validation/`, because nothing in the
-  single-recording pipeline calls it directly.
-  - `fn_cohortAnalysis.m`
+- **`CohortAnalysis/`** - the functions that power the top-level cohort scripts.
+  Sit outside `Functions/` because nothing in the single-recording pipelines calls them directly.
+  - `fn_cohortAnalysis.m` - Pools single-stimulus/attractor `.mat` files.
+  - `fn_cohortAnalysis_sensitization.m` - Pools sensitization files, extracts 3D matrices, and flattens them to wide-format Excel tables with dynamic missing-field padding.
 - **`Results/`**, **`Figures/`** - default output locations (see `Config_UserSettings.m`).
 
 ## How do I use this with my own data?
@@ -92,95 +91,53 @@ script that only calls those functions in sequence.
 
 ## Cohort-level analysis (across recordings)
 
-Once you have run `Run_Attractor_Analysis.m` for every animal, run
-**`Run_Cohort_Analysis.m`** to pool the results. Edit `recording_IDs` near the top first to list exactly which recordings
-belong to be analysed in a cohort. This is deliberate rather than auto-pooling
-everything in that folder, thus it keeps a record of exactly what went into
-each cohort table. If you'd rather auto-discover every `*_results.mat` file instead, 
-the script has a commented-out line for that.
+### Standard & Evoked Cohorts
+Once you have run `Run_Attractor_Analysis.m` or `Run_Evoked_Analysis.m` for every animal, run **`Run_Cohort_Analysis.m`** to pool the results. Edit `recording_IDs` near the top first to list exactly which recordings belong to be analysed in a cohort. This is deliberate rather than auto-pooling everything in that folder, thus it keeps a record of exactly what went into each cohort table. 
 
-It calls `fn_cohortAnalysis(RESULTS_DIR, recording_IDs)`, shows you
-`cohort.summaryTable`. This loads each recording's `.mat` file and pulls a fixed set of scalar metrics into one
-row-per-recording table and saves it in a excel sheet which can be used further for statistics. 
+It calls `fn_cohortAnalysis(RESULTS_DIR, recording_IDs)` and pulls a fixed set of scalar metrics into one row-per-recording table, saving it as `CohortAnalysis_Summary.mat` and an Excel sheet which can be used further for statistics. 
 
-### What is the difference between fixed and RR-defined epochs?
+### Sensitization Cohorts
+To analyse repeated-measures sensitization data, run **`Run_Cohort_Analysis_Sensitization.m`**. It automatically pools all `*_results_sensitization.mat` files in your chosen directory and extracts parameters across all 5 stimuli. 
 
-Every metric below is computed twice, under two different ways of
-deciding where "Evoked" ends and "Recovery" begins - the column name
-tells you which one you're looking at:
-
-- **Fixed epochs** (no suffix, e.g. `PR_norm_Evoked`, `align_ER`) - epoch
-  boundaries come from protocol timing alone: fixed delays after the
-  stimulus markers (`t_P9`, `t_C2`), the same for every recording of a
-  given protocol duration. Simple and consistent across animals, but
-  assumes every animal's population actually settles into
-  Evoked/Recovery dynamics on the same fixed clock.
-- **Attractor-defined / RR-defined epochs** (`_rr` suffix, e.g.
-  `PR_norm_rr_AttractorEvoked`, `align_ER_rr`) - epoch boundaries come
-  from the data itself: the point where recurrence density actually
-  crosses `cfg.ONSET_RATIO`, i.e. when the population's own trajectory
-  detectably "locks onto" a recurring state (`t_attractor_onset`) and
-  when it detectably leaves it again (`t_attractor_return`). Adapts to
-  each animal, but only as trustworthy as `onset_detected`/
-  `return_detected` being `true` for that recording (see below).
-
-Comparing the fixed vs `_rr` version of the same metric is itself a
-useful check: if a result holds up under both, it's less likely to be an
-artifact of how the epoch boundary was drawn.
+It generates a wide-format Excel table (`Cohort_Summary_Sensitization.xlsx`) specifically structured for repeated-measures ANOVA, where each row is one animal and each column is a metric/stimulus permutation (e.g., `PR_evoked_S1`, `PR_evoked_S2`).
 
 ### What each variable means
 
-**Subspace alignment** (Evoked subspace vs Recovery subspace)
-| Variable | Meaning |
-|---|---|
-| `align_ER` | Raw alignment score (0-1) between the Evoked and Recovery population subspaces (Elsayed & Cunningham method), fixed epochs. Higher = the two epochs occupy more similar directions in neural state space. |
-| `chance_lvl` | The alignment score expected by chance for two *randomly oriented* subspaces of the same dimensionality (`= K/N`, i.e. `nDims_align / nN`). Not zero - random subspaces still overlap somewhat, more so in low-dimensional recordings. |
-| `align_ER_corrected` | `align_ER` rescaled against `chance_lvl`: `(align_ER - chance_lvl) / (1 - chance_lvl)`. 0 = exactly chance, 1 = perfect alignment. **Use this one, not `align_ER`, when comparing across animals** - different animals can have different `chance_lvl` (different N or K), so raw `align_ER` values aren't directly comparable to each other, but the corrected value is. |
-| `nDims_align` | K, the number of dimensions the alignment was computed in (chosen automatically from the Evoked epoch; same K used for both fixed and `_rr` alignment). |
-| `align_ER_rr` | Same idea as `align_ER` (**raw**, not chance-corrected), but computed between the attractor-defined Evoked/Recovery epochs instead of the fixed-time ones. There is no chance-corrected counterpart for the `_rr` epochs in the current pipeline - if you need one, compute `(align_ER_rr - chance_lvl) / (1 - chance_lvl)` yourself before comparing `align_ER_rr` across animals, for the same reason `align_ER_corrected` exists for the fixed-epoch version. |
+**Sensitization Variables (Motor Identity vs. Complexity)**
+In sensitization experiments, it is necessary to separate the *strength* of the motor response from the *identity* of the motor program. The following metrics are extracted across all stimuli (S1-S5):
 
-**Participation ratio** (dimensionality of population activity within an epoch, normalized by neuron count so it's comparable across recordings with different N)
 | Variable | Meaning |
 |---|---|
-| `PR_norm_Baseline` / `_Evoked` / `_Recovery` | Normalized participation ratio in each fixed epoch. Higher = activity is more spread across many dimensions (higher-dimensional); lower = more collapsed onto a few dominant directions. |
-| `PR_norm_rr_Baseline` / `_AttractorEvoked` / `_AttractorRecovery` | Same metric, computed in the attractor-defined epochs instead. |
+| `PR_evoked_S#` | **Complexity:** Normalized participation ratio for Stimulus #. A drop indicates the network is collapsing into lower-dimensional space (fewer neurons firing in complex patterns). |
+| `RR_S#` | **Attractor Density:** Self-recurrence density for Stimulus #. An increase indicates the network is locking onto a specific trajectory more tightly. |
+| `Onset_Time_S#` | **Convergence Speed:** Time (s) it takes for the network to cross the recurrence density threshold for Stimulus #. |
+| `Align_to_S1_S#` | **Linear Identity:** Subspace alignment of Stimulus # relative to the PCA subspace of Stimulus 1. If PR drops but alignment remains high, the animal is executing the exact same motor pattern, just less vigorously. A drop indicates recruitment of a functionally different motor program. |
+| `Cross_RR_S#` | **Non-linear Identity:** Cross-recurrence density of Stimulus # against Stimulus 1. Similar to alignment, this tests whether the specific non-linear state space trajectory matches the initial response. |
 
-**Recurrence rate** (how often the population's trajectory revisits nearby states - a signature of being "on an attractor")
-| Variable | Meaning |
-|---|---|
-| `RQA_ev_RR` | Self-recurrence density within the Evoked epoch: how often Evoked-epoch states recur *within the Evoked epoch itself*, using an epsilon (distance threshold) calibrated on that epoch's own trajectory. |
-| `RQA_re_RR` | Same idea, self-recurrence within the Recovery epoch, using Recovery's own calibrated epsilon. |
-| `cross_recur_density` | Cross-recurrence: how often Evoked-epoch states recur *within the Recovery epoch*, using one shared epsilon (calibrated on Evoked). This is the one that speaks to whether Recovery actually returns to the same states visited during Evoked, rather than just being locally self-consistent. |
-| `epsilon_rr` / `epsilon_re` | The calibrated distance thresholds themselves (Evoked-epoch and Recovery-epoch respectively) - useful for sanity-checking whether two recordings used comparable thresholds, less useful as an analysis variable in its own right. |
+**Standard Attractor Variables (Evoked vs Recovery)**
+*(Note: Refer to fixed vs RR-defined epoch distinctions based on the pipeline run)*
 
-**Attractor onset/return timing** (attractor-defined epochs only - these are what define the `_rr` epoch boundaries above)
 | Variable | Meaning |
 |---|---|
+| `align_ER` | Raw alignment score (0-1) between the Evoked and Recovery population subspaces. Higher = the two epochs occupy more similar directions in neural state space. |
+| `chance_lvl` | The alignment score expected by chance for two *randomly oriented* subspaces of the same dimensionality (`= K/N`). |
+| `align_ER_corrected` | `align_ER` rescaled against `chance_lvl`: `(align_ER - chance_lvl) / (1 - chance_lvl)`. **Use this one, not `align_ER`, when comparing across animals**. |
+| `PR_norm_...` | Normalized participation ratio in the specified epoch. Higher = higher-dimensional activity; lower = collapsed onto dominant directions. |
+| `RQA_ev_RR` / `_re_RR` | Self-recurrence density within the specified epoch using an epsilon calibrated on that epoch's own trajectory. |
+| `cross_recur_density`| How often Evoked-epoch states recur *within the Recovery epoch*, using one shared epsilon (calibrated on Evoked). |
 | `t_attractor_onset` | Time (s) the population first detectably locked onto a recurring state after the stimulus. |
-| `t_attractor_return` | Time (s) it detectably left that state again. |
-| `onset_detected` / `return_detected` | `true` if that lock-on/release was genuinely detected; `false` means detection failed and `t_attractor_onset`/`t_attractor_return` is a fallback value, **not a real timestamp** - check these flags before using the timing columns, and before trusting any `_rr` column for that recording, since the `_rr` epochs are built from these same timestamps. |
-
-`recording_ID` and `protocol` are carried through as-is for reference/filtering.
-
-By default it also saves the pooled table to
-`<RESULTS_DIR>/CohortAnalysis_Summary.mat` (pass `'SaveTable', false` to
-skip this). It is **not** called automatically by
-`Run_Attractor_Analysis.m` or anywhere else - run it yourself once every
-recording is done. **This is not a statistics tool**.
+| `onset_detected` | `true` if lock-on was genuinely detected; `false` means detection failed and timing columns are fallbacks. |
 
 ## Things to be aware of
 
 - All functions assume `spike_conv` (Gaussian-smoothed activity) is
   `neurons x frames`, single precision, and that PCA bases (`V`, `mu`) are
   computed once and reused everywhere a shared reference subspace is
-  needed (e.g. recurrence-density trajectories use the same 3-D basis
-  throughout Section 5, calibrated from the Evoked epoch onward - see
-  `Run_Attractor_Analysis.m`).
+  needed.
 - In `Run_Attractor_Analysis.m`, self-recurrence density for an epoch is
   always calibrated with that epoch's *own* epsilon (`fn_safeEpsilon`);
   cross-recurrence density between two epochs intentionally uses one shared
-  epsilon (from the reference epoch) - see the comments in
-  `Run_Attractor_Analysis.m` Section 5 for why these differ.
+  epsilon (from the reference epoch).
 - `fn_recurrenceDensity` and `fn_crossRecurrenceDensity` are both
   O(N^2) in the number of trajectory points; always downsample long
   trajectories first (see `fn_getEpochTrajectory`, and `cfg.MAX_WIN_PTS` /
