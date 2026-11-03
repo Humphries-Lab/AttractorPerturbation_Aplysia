@@ -401,9 +401,29 @@ save(save_path, ...
     'ONSET_RATIO', ...
     '-v7.3');
 
+%% PER-STIMULUS RESULTS IN THE FORMAT Run_Cohort_Analysis.m EXPECTS
+% One '<recording_ID>_S<i>_results.mat' per stimulus (Baseline + Evoked_i),
+% so each stimulus becomes one row of the existing cohort table.
+for i = 1:nStim
+    S = struct();
+    S.recording_ID      = sprintf('%s_S%d', cfg.recording_ID, i);
+    S.protocol          = protocol_label;
+    S.nN                = nN;
+    S.nDims_align       = nDims;
+    S.chance_lvl        = chance_lvl;
+    S.epsilon_rr        = epsilon_rr;
+    S.PR_norm           = [PR_norm(baseline_idx), PR_norm(evoked_idx(i))];
+    S.PR_norm_Baseline  = PR_norm(baseline_idx);
+    S.PR_norm_Evoked    = PR_norm(evoked_idx(i));
+    S.RQA_ev_RR         = ev_recur_density(i);
+    S.t_attractor_onset = t_attractor_onset_all(i);
+    S.onset_detected    = onset_detected_all(i);
+    save(fullfile(cfg.RESULTS_DIR, [S.recording_ID '_results.mat']), '-struct', 'S');
+end
+fprintf('Saved %d per-stimulus cohort files (%s_S1..S%d_results.mat)\n', nStim, cfg.recording_ID, nStim);
+
 fprintf('\nSaved: %s\nDone.\n', save_path);
 diary off;
-
 
 %% =========================================================================
 %  LOCAL FUNCTIONS
