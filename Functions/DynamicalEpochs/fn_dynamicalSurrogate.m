@@ -28,6 +28,7 @@ surr.real = struct('rot6', dyn_real.rot6, 'ndim80', dyn_real.ndim80, ...
 fprintf('\n  Surrogate control (%d runs, each neuron circularly shifted independently):\n', n);
 for i = 1:n
     c = cfg; c.DYN_SURR_SHIFT = true; c.DYN_SEED = cfg.DYN_SEED + i;
+    c.DYN_NPERM = 100; c.DYN_NNULL = 100;   % landmark/chance nulls are not used here; keep each run fast
     d = struct('ok', false, 'message', '');
     try
         evalc('d = fn_dynamicalEpochs(spike_conv, fs, t_range_s, c, ep_bounds, ep_labels);');
