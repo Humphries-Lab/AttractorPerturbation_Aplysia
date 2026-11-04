@@ -440,6 +440,24 @@ dyn.BvR = BvR;
 dyn.sim_thresh = sim_thresh;
 dyn.drift = drift;
 dyn.pairs = struct('lag_s', lag_s, 'sim', sv, 'type', ptype, 'same_cluster', same);
+% Cycle budget after the perturbation (target: cfg.DYN_MIN_POST_CYCLES, default 10)
+minPost = 10;
+if isfield(cfg, 'DYN_MIN_POST_CYCLES'), minPost = cfg.DYN_MIN_POST_CYCLES; end
+iP = find(strcmp(ep_labels, 'Perturbed'), 1);
+if isempty(iP), iP = iR; end
+dyn.n_post_cycles = NaN; dyn.n_recovery_cycles = NaN; dyn.post_t0 = NaN;
+if ~isempty(iP)
+    dyn.post_t0 = ep_bounds(iP, 1);
+    dyn.n_post_cycles = sum(cycle_mid >= dyn.post_t0);
+    if ~isempty(iR), dyn.n_recovery_cycles = sum(epoch_of_cycle == iR); end
+    fprintf('  Cycles after perturbation (t >= %.1f s): %d (Recovery epoch only: %d) | target >= %d\n', ...
+        dyn.post_t0, dyn.n_post_cycles, dyn.n_recovery_cycles, minPost);
+    if dyn.n_post_cycles < minPost
+        warning('fn_dynamicalEpochs:TooFewPostCycles', ...
+            'Only %d cycles after the perturbation (target %d). Run fn_dynamicalTuneParams before lowering thresholds.', ...
+            dyn.n_post_cycles, minPost);
+    end
+end
 dyn.params = struct('bin_ms', bin_eff, 'min_seg_s', cfg.DYN_MIN_SEG_S, ...
     'rec_thresh', cfg.DYN_REC_THRESH, 'seed', cfg.DYN_SEED);
 end
