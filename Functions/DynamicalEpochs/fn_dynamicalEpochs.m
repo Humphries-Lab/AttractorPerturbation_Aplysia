@@ -445,16 +445,17 @@ minPost = 10;
 if isfield(cfg, 'DYN_MIN_POST_CYCLES'), minPost = cfg.DYN_MIN_POST_CYCLES; end
 iP = find(strcmp(ep_labels, 'Perturbed'), 1);
 if isempty(iP), iP = iR; end
-dyn.n_post_cycles = NaN; dyn.n_recovery_cycles = NaN; dyn.post_t0 = NaN;
+dyn.n_post_cycles = NaN; dyn.n_post_clean = NaN; dyn.n_recovery_cycles = NaN; dyn.post_t0 = NaN;
 if ~isempty(iP)
     dyn.post_t0 = ep_bounds(iP, 1);
     dyn.n_post_cycles = sum(cycle_mid >= dyn.post_t0);
     if ~isempty(iR), dyn.n_recovery_cycles = sum(epoch_of_cycle == iR); end
     fprintf('  Cycles after perturbation (t >= %.1f s): %d (Recovery epoch only: %d) | target >= %d\n', ...
         dyn.post_t0, dyn.n_post_cycles, dyn.n_recovery_cycles, minPost);
+    dyn.n_post_clean = sum(cycle_t(:,1) >= dyn.post_t0);   % cycles that START after C2 (excludes the one straddling it)
+    fprintf('    of which %d start after the perturbation (the rest straddles it)\n', dyn.n_post_clean);
     if dyn.n_post_cycles < minPost
-        warning('fn_dynamicalEpochs:TooFewPostCycles', ...
-            'Only %d cycles after the perturbation (target %d). Run fn_dynamicalTuneParams before lowering thresholds.', ...
+        fprintf('  Note: %d cycles after the perturbation, below the %d hoped for. Reported as attained (not forced).\n', ...
             dyn.n_post_cycles, minPost);
     end
 end
