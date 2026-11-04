@@ -283,6 +283,12 @@ if cfg.DYN_ENABLE
             case 'post_evoked', dyn_range = [t_evoked_start, t_end];
             otherwise, error('cfg.DYN_WINDOW must be ''full'' or ''post_evoked''.');
         end
+        
+        % 6-pre: data-driven BIN_MS / MIN_SEG_S / REC_THRESH so that >= 10 cycles fall after C2
+        % Prints recommendations only; copy them into Config_UserSettings.m, then rerun.
+        tune = fn_dynamicalTuneParams(spike_conv, cfg.fs, cfg, dyn_range, ep_bounds, ep_labels, ...
+            [t_C2 t_end], [t_recovery_start t_end], cfg.DYN_MIN_POST_CYCLES);
+       
         dyn = fn_dynamicalEpochs(spike_conv, cfg.fs, dyn_range, cfg, ep_bounds, ep_labels);
         fn_plotDynamicalEpochs(dyn, cfg.recording_ID, cfg.FIGURES_DIR);
         fn_plotDynamicalThreshold(dyn, cfg.recording_ID, cfg.FIGURES_DIR);
