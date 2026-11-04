@@ -13,7 +13,7 @@ nanv = nan(1, n);
 sweep = struct('rec_thresh', vals, 'n_cycles', nanv, 'n_clusters', nanv, 'n_changes', nanv, ...
     'shared_E_in_R', nanv, 'shared_R_in_E', nanv, 'sim_ER', nanv, ...
     'sim_within_E', nanv, 'sim_within_R', nanv, 'same_dominant', nanv, ...
-    'chance95', nanv, 'separation', nanv);
+    'chance95', nanv, 'separation', nanv, 'n_post', nanv);
 
 fprintf('\n  Recurrence-threshold sweep (%s %%):\n', mat2str(vals));
 for k = 1:n
@@ -32,6 +32,7 @@ for k = 1:n
     sweep.n_cycles(k)   = numel(d.segment_s);
     sweep.n_clusters(k) = d.nGroups;
     sweep.n_changes(k)  = numel(d.change_t);
+    if isfield(d, 'n_post_cycles'), sweep.n_post(k) = d.n_post_cycles; end
     sweep.chance95(k)   = d.sim_thresh.chance95;
     sweep.separation(k) = d.sim_thresh.separation;
     if isfield(d, 'EvR')
@@ -44,10 +45,10 @@ for k = 1:n
     end
 end
 
-fprintf('  thresh | cycles | clusters | changes | E in R | R in E | E<->R | within E | within R | same dominant\n');
+fprintf('  thresh | cycles | post-C2 | clusters | changes | E in R | R in E | E<->R | within E | within R | same dominant\n');
 for k = 1:n
-    fprintf('  %5g%% | %6g | %8g | %7g | %6.2f | %6.2f | %5.2f | %8.2f | %8.2f | %g\n', vals(k), ...
-        sweep.n_cycles(k), sweep.n_clusters(k), sweep.n_changes(k), sweep.shared_E_in_R(k), ...
+    fprintf('  %5g%% | %6g | %7g | %8g | %7g | %6.2f | %6.2f | %5.2f | %8.2f | %8.2f | %g\n', vals(k), ...
+        sweep.n_cycles(k), sweep.n_post(k), sweep.n_clusters(k), sweep.n_changes(k), sweep.shared_E_in_R(k), ...
         sweep.shared_R_in_E(k), sweep.sim_ER(k), sweep.sim_within_E(k), sweep.sim_within_R(k), sweep.same_dominant(k));
 end
 end
