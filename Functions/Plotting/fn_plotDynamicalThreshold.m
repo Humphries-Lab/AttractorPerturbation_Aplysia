@@ -2,9 +2,10 @@ function fn_plotDynamicalThreshold(dyn, recording_ID, figuresDir) %#ok<INUSD>
 % FN_PLOTDYNAMICALTHRESHOLD  Change points and similarity threshold (publication layout).
 %   A  Distribution of pairwise cycle alignment, same- vs different-cluster pairs,
 %      with the shuffle-chance level (95th percentile) and the separating threshold.
-%   B  Dynamical epochs (runs of one cluster) along time; black lines = change points;
+%   B  Dynamical epochs (runs of one cluster) along time; black lines = cluster change points;
 %      grey strip = protocol epochs (used only to label, not to detect).
-%   C  Alignment vs time between cycles, with a linear fit to same-epoch pairs.
+%   C  Alignment vs time between cycles. The line is fitted to same-epoch pairs only and is
+%      drawn solid over the fitted range and dashed where it is extrapolated.
 %
 %   FN_PLOTDYNAMICALTHRESHOLD(dyn, recording_ID, figuresDir)
 
@@ -75,9 +76,11 @@ for g = 1:nG, hL(g) = patch(NaN, NaN, cmap(g,:), 'EdgeColor', 'none'); end
 lgd = legend(hL, arrayfun(@(g) sprintf('%d', g), 1:nG, 'UniformOutput', false), ...
     'Location', 'southoutside', 'Orientation', 'horizontal', 'Box', 'off', 'FontSize', 9);
 title(lgd, 'Cluster');
+title('Black lines: cluster change points. Grey strip: protocol epochs (labels only)', ...
+    'FontWeight', 'normal', 'FontSize', 9);
 set(gca, 'YTick', []); xlabel('Time (s)'); box on;
 
-%C - alignment vs time between cycles
+% C - alignment vs time between cycles
 ax3 = subplot(1,3,3); hold on;
 m0 = pr.type == 0; m1 = pr.type == 1; m2 = pr.type == 2;
 hp = gobjects(0); lp = {};
@@ -86,9 +89,15 @@ if any(m1), hp(end+1) = plot(pr.lag_s(m1), pr.sim(m1), '.', 'Color', blue, 'Mark
 if any(m2), hp(end+1) = plot(pr.lag_s(m2), pr.sim(m2), '.', 'Color', red, 'MarkerSize', 12); lp{end+1} = 'Evoked-Recovery'; end
 hasFit = isfield(dyn.drift, 'ok') && dyn.drift.ok;
 if hasFit
-    xx = [0 max(pr.lag_s)];
-    hp(end+1) = plot(xx, dyn.drift.intercept + dyn.drift.slope_per_min / 60 * xx, 'k--', 'LineWidth', 1.2);
-    lp{end+1} = 'Linear fit (same epoch)';
+    fitFun = @(x) dyn.drift.intercept + dyn.drift.slope_per_min / 60 * x;
+    lagFit = [0 max(pr.lag_s(m1))];                    % range the line was fitted on (same-epoch pairs)
+    lagExt = [max(pr.lag_s(m1)) max(pr.lag_s)];        % beyond it: extrapolated
+    hp(end+1) = plot(lagFit, fitFun(lagFit), 'k-', 'LineWidth', 1.5);
+    lp{end+1} = 'Fit to same-epoch pairs';
+    if lagExt(2) > lagExt(1)
+        hp(end+1) = plot(lagExt, fitFun(lagExt), '--', 'Color', gry, 'LineWidth', 1.5);
+        lp{end+1} = 'Extrapolated';
+    end
 end
 if ~isnan(st.chance95)
     hp(end+1) = yline(st.chance95, ':', 'Color', 'k', 'LineWidth', 1.2); lp{end+1} = 'Chance';
@@ -96,7 +105,8 @@ end
 if ~isempty(hp), legend(hp, lp, 'Location', 'northeast', 'Box', 'off', 'FontSize', 9); end
 xlabel('Time between cycles (s)'); ylabel('Subspace alignment'); ylim([0 1]);
 if hasFit
-    title(sprintf('Evoked-Recovery: %.2f observed, %.2f expected', dyn.drift.obs_ER, dyn.drift.pred_ER), ...
+    title({sprintf('Evoked-Recovery: %.2f observed, %.2f from the same-epoch fit', dyn.drift.obs_ER, dyn.drift.pred_ER), ...
+           sprintf('(%.0f%% of Evoked-Recovery pairs lie beyond the fitted time lags)', 100 * dyn.drift.frac_extrapolated)}, ...
         'FontWeight', 'normal', 'FontSize', 10);
 end
 
