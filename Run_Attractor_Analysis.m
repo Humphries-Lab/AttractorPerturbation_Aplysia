@@ -273,7 +273,7 @@ fn_plotAttractorComparison(PR_norm, PR_norm_rr, win_labels, ...
 %  Computing PR per cycle (dimensionality time-series),
 %  cycle-to-cycle and cycle-to-reference alignment (movement of the attractor),
 %  and the phase of the cycle at which P9 and C2 were applied.
-dyn = struct('ok', false); dyn_sweep = struct(); dyn_surr = struct(); cyc = struct('ok', false);
+dyn = struct('ok', false); dyn_sweep = struct(); dyn_surr = struct(); cyc = struct('ok', false); ph = struct('ok', false);
 if cfg.DYN_ENABLE
     fprintf('\nSection 6: Dynamical epochs (jPCA cycles)...\n');
     ep_bounds = [0, t_P9; t_evoked_start, t_C2; t_C2, t_recovery_start; t_recovery_start, t_end];
@@ -299,7 +299,15 @@ if cfg.DYN_ENABLE
             warning('Run_Attractor_Analysis:CycleMetricsFailed', 'Section 6b skipped: %s', ME2.message);
             cyc = struct('ok', false);
         end
- 
+        
+        % 6c - stimulus phase as a rotation angle in the jPC plane 
+        try
+            ph = fn_stimulusPhaseJPC(spike_conv, cfg.fs, dyn, dyn_range, [t_P9 t_C2], {'P9','C2'}, ...
+                cfg.FIGURES_DIR, cfg.recording_ID);
+        catch ME3
+            warning('Run_Attractor_Analysis:StimPhaseFailed', 'Section 6c skipped: %s', ME3.message);
+            ph = struct('ok', false);
+        end
         if ~isempty(cfg.DYN_REC_SWEEP)
             dyn_sweep = fn_dynamicalSweep(spike_conv, cfg.fs, dyn_range, cfg, ep_bounds, ep_labels, dyn);
         end
@@ -337,7 +345,7 @@ save(save_path, ...
     'rr_full_t','rr_full_v', ...
     'onset_win_t','onset_win_v','onset_win_v_fixed', ...
     'return_win_t','return_win_v','return_win_v_fixed', ...
-    'dyn','cyc','dyn_sweep','dyn_surr', ...
+    'dyn','cyc','ph','dyn_sweep','dyn_surr', ...
     '-v7.3');
  
 fprintf('\nSaved: %s\nDone.\n', save_path);
