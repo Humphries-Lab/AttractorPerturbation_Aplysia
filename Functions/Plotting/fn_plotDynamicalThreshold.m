@@ -1,5 +1,5 @@
 function fn_plotDynamicalThreshold(dyn, recording_ID, figuresDir) %#ok<INUSD>
-% FN_PLOTDYNAMICALTHRESHOLD  Change points and similarity threshold (publication layout).
+% FN_PLOTDYNAMICALTHRESHOLD  Change points and similarity threshold.
 %   A  Distribution of pairwise cycle alignment, same- vs different-cluster pairs,
 %      with the shuffle-chance level (95th percentile) and the separating threshold.
 %   B  Dynamical epochs (runs of one cluster) along time; black lines = cluster change points;
