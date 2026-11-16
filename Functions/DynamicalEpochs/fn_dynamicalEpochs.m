@@ -116,6 +116,10 @@ catch ME6
     warning('fn_dynamicalEpochs:Rot6Failed', 'Fixed 6-PC jPCA failed: %s', ME6.message);
 end
 
+skipIsRot = isfield(cfg, 'DYN_SKIP_ISROT') && cfg.DYN_SKIP_ISROT;   % set by fn_dynamicalSurrogate (not needed there)
+if skipIsRot
+    dyn.jpca_var_top2 = NaN; dyn.is_rotational = NaN;
+else
 try
     if dyn.ndim80 > 20   % Andrea's jPCA code refuses more than 20 PCs (would stop in the debugger)
         error('needs %d PCs for 80%% of the variance (>20): no low-dimensional structure', dyn.ndim80);
@@ -128,6 +132,7 @@ try
 catch ME
     warning('fn_dynamicalEpochs:jPCAFailed', 'is_rotational failed: %s', ME.message);
     dyn.jpca_var_top2 = NaN; dyn.is_rotational = NaN; dyn.jpca_error = ME.message;
+end
 end
 
 try
