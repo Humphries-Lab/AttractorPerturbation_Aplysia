@@ -460,7 +460,7 @@ if ~isempty(iP)
     dyn.n_post_clean = sum(cycle_t(:,1) >= dyn.post_t0);   % cycles that START after C2 (excludes the one straddling it)
     fprintf('    of which %d start after the perturbation (the rest straddles it)\n', dyn.n_post_clean);
     if dyn.n_post_cycles < minPost
-        fprintf('  Note: %d cycles after the perturbation, below the %d hoped for. Reported as attained (not forced).\n', ...
+        fprintf('  Note: %d cycles after the perturbation.\n', ...
             dyn.n_post_cycles, minPost);
     end
 end
