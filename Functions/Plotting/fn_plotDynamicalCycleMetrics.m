@@ -16,7 +16,7 @@ colA = [0.8 0.1 0.1]; colB = [0.1 0.3 0.7]; colG = [0.5 0.5 0.5];
 t = cyc.cycle_mid; nS = numel(cyc.stim);
 xl = [cyc.cycle_t(1,1) cyc.cycle_t(end,2)];
 
-fig = figure('Name', 'Cycle metrics', 'Position', [100 100 800 850], 'Visible', 'off', 'Color', 'w');
+fig = figure('Name', 'Cycle metrics', 'Position', [100 100 800 850], 'Visible', 'on', 'Color', 'w');
 tl = tiledlayout(fig, 5, 1, 'TileSpacing', 'compact', 'Padding', 'loose');
 
 % A - PR per cycle
@@ -68,7 +68,7 @@ for i = 1:3
 end
 
 exportgraphics(fig, fullfile(figuresDir, '06d_dynamical_cycle_metrics.png'), 'Resolution', 500);
-close(fig);
+% close(fig); % kept open
 end
 
 function fn_stimLines(ax, stim)
