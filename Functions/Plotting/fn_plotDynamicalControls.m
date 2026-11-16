@@ -16,7 +16,7 @@ function fn_plotDynamicalControls(dyn, surr, recording_ID, figuresDir) %#ok<INUS
 if ~isfield(dyn, 'ok') || ~dyn.ok, return; end
 blue = [0.1 0.3 0.7]; gry = [0.5 0.5 0.5]; red = [0.8 0.1 0.1];
 
-fig = figure('Name', 'Dynamical epochs: controls', 'Position', [100 100 1400 820], 'Visible', 'off');
+fig = figure('Name', 'Dynamical epochs: controls', 'Position', [100 100 1400 820], 'Visible', 'on');
 
 %% A - block contrast over all splits
 axA = subplot(2, 6, 1:3); hold on;
@@ -39,8 +39,6 @@ else
     text(0.5, 0.5, 'Too few cycles', 'Units', 'normalized', 'HorizontalAlignment', 'center');
 end
 xlabel('Split time (s)'); ylabel('Block contrast (within - between time blocks)');
-title('Is the strongest split at a protocol landmark?');
-subtitle('Dot: strongest split. Red dashed: P9 and manual epoch starts (Evo, Per = C2, Rec)', 'FontSize', 8);
 
 %% B - landmark permutation
 axB = subplot(2, 6, 4:6); hold on;
@@ -54,8 +52,6 @@ else
     text(0.5, 0.5, 'No change points in window', 'Units', 'normalized', 'HorizontalAlignment', 'center');
 end
 xlabel('Mean distance, landmark to nearest cluster change (s)'); ylabel('Proportion of permutations');
-title('Are cluster changes closer to the landmarks than chance?');
-subtitle('Grey: random change points. Red: observed', 'FontSize', 8);
 
 %% C, D, E - data vs surrogates
 if isstruct(surr) && isfield(surr, 'real')
@@ -78,12 +74,8 @@ end
 
 fn_formatAxes(fig, 'Arial', 10);
 fn_letterAxes(axes_all, 14, 'Arial');
-annotation(fig, 'textbox', [0.05 0.002 0.9 0.03], 'String', ...
-    ['Within - between = mean alignment of same-cluster minus different-cluster cycle pairs. ' ...
-     'Surrogates: every neuron circularly shifted independently. Smallest possible p = 1/(n+1).'], ...
-    'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 9);
 exportgraphics(fig, fullfile(figuresDir, '06c_dynamical_controls.png'), 'Resolution', 500);
-close(fig);
+drawnow;   % figure stays open on screen
 end
 
 function drawComparison(ax, realVal, surrVals, ttl, ylab, pval, nS, blue, gry)
@@ -100,9 +92,8 @@ allv = [sv(:); realVal];
 pad = 0.15 * max(max(allv) - min(allv), eps);
 ylim([min(allv) - pad, max(allv) + 2.2 * pad]);
 ylabel(ylab);
-title(ttl);
 if isfinite(pval)
-    text(0.5, 0.97, sprintf('p = %.2f (smallest possible %.2f)', pval, 1 / (nS + 1)), 'Units', 'normalized', ...
+    text(0.5, 0.97, sprintf('p = %.2f', pval), 'Units', 'normalized', ...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', 'FontSize', 8);
 end
 end
