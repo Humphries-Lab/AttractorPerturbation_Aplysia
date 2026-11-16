@@ -52,15 +52,15 @@ fprintf('\nSection 1: Loading and preprocessing...\n');
 [peaks, nNeurons, nFrames] = fn_loadPeaksData(cfg.DATA_FILE, cfg.chunk_size);
 
 [peaks, good, rate_all, nN] = fn_qualityFilterNeurons(peaks, cfg.fs, cfg.min_rate, cfg.max_rate); %#ok<ASGLU>
-fn_plotRateDistribution(rate_all, cfg.recording_ID, nNeurons, cfg.FIGURES_DIR);
-fn_plotRaster(peaks, cfg.fs, nN, nFrames, t_P9, t_C2, cfg.recording_ID, cfg.protocol, cfg.FIGURES_DIR);
+%fn_plotRateDistribution(rate_all, cfg.recording_ID, nNeurons, cfg.FIGURES_DIR);
+%fn_plotRaster(peaks, cfg.fs, nN, nFrames, t_P9, t_C2, cfg.recording_ID, cfg.protocol, cfg.FIGURES_DIR);
 
 sigma_s = fn_estimateKernelWidth(peaks, cfg.fs);
 spike_conv = fn_gaussConvSpikes(peaks, sigma_s, cfg.fs);
 clear peaks;
 fprintf('  spike_conv: %.0f MB (single)\n', nN*nFrames*4/1e6);
 
-fn_plotSmoothedActivity(spike_conv, cfg.fs, nN, nFrames, sigma_s, t_P9, t_C2, cfg.recording_ID, cfg.FIGURES_DIR);
+%fn_plotSmoothedActivity(spike_conv, cfg.fs, nN, nFrames, sigma_s, t_P9, t_C2, cfg.recording_ID, cfg.FIGURES_DIR);
 
 %% =========================================================================
 %  SECTION 2 - PCA + 3-D POPULATION TRAJECTORY
@@ -73,8 +73,8 @@ fprintf('  PC1=%.1f%%  PC2=%.1f%%  PC3=%.1f%%\n', var_exp(1), var_exp(2), var_ex
 
 scores  = fn_projectOntoPCs(spike_conv, f_pca_start, nFrames, V, mu_pca, 3, cfg.pca_block_size);
 t_pca   = (f_pca_start:nFrames-1) / cfg.fs;
-fn_plotScree(var_exp, nN, cfg.FIGURES_DIR);
-fn_plotTrajectory3D(scores, t_pca, t_C2, var_exp, cfg.recording_ID, cfg.FIGURES_DIR);
+%fn_plotScree(var_exp, nN, cfg.FIGURES_DIR);
+%fn_plotTrajectory3D(scores, t_pca, t_C2, var_exp, cfg.recording_ID, cfg.FIGURES_DIR);
 
 [epoch_scores, centroids] = fn_epochScoresAndCentroids(spike_conv, wins_s, cfg.fs, V, mu_pca, win_labels); %#ok<ASGLU>
 
@@ -99,9 +99,9 @@ PR_norm = PR_raw / nN;
 fprintf('  PR/N - Baseline: %.3f  Evoked: %.3f  Recovery: %.3f\n', PR_norm);
 
 [pr_t, pr_v] = fn_slidingParticipationRatio(spike_conv, win_f, step_f, cfg.fs, nN);
-fn_plotPRTimeseries(pr_t, pr_v, t_P9, t_evoked_start, t_C2, t_recovery_start, ...
-    cfg.motor_buffer_s, cfg.recovery_delay_s, cfg.slide_win_s, cfg.slide_step_s, ...
-    cfg.recording_ID, cfg.FIGURES_DIR);
+%fn_plotPRTimeseries(pr_t, pr_v, t_P9, t_evoked_start, t_C2, t_recovery_start, ...
+%    cfg.motor_buffer_s, cfg.recovery_delay_s, cfg.slide_win_s, cfg.slide_step_s, ...
+%    cfg.recording_ID, cfg.FIGURES_DIR);
 
 %% =========================================================================
 %  SECTION 4 - SUBSPACE ALIGNMENT
@@ -122,16 +122,16 @@ align_ER_corrected = (align_ER - chance_lvl) / (1 - chance_lvl);
 fprintf('  Evoked->Recovery = %.3f  (chance=%.3f, ratio=%.1fx)\n', align_ER, chance_lvl, align_ER/chance_lvl);
 fprintf('  Evoked->Recovery (chance-corrected) = %.3f\n', align_ER_corrected);
 
-fn_plotAlignmentMatrix(align_mat, win_labels, cfg.recording_ID, cfg.FIGURES_DIR);
+%fn_plotAlignmentMatrix(align_mat, win_labels, cfg.recording_ID, cfg.FIGURES_DIR);
 
 K_range = max(2,floor(nDims/2)):min(floor(3*nDims/2), nN);
 al_vs_k = fn_alignmentVsK(WPCA(2), WPCA(3), K_range);
-fn_plotAlignmentVsK(K_range, al_vs_k, nN, nDims, cfg.recording_ID, cfg.FIGURES_DIR);
+%fn_plotAlignmentVsK(K_range, al_vs_k, nN, nDims, cfg.recording_ID, cfg.FIGURES_DIR);
 
 evoked_axes = WPCA(2).eigenvectors(:,1:nDims);
 [al_t, al_v] = fn_slidingSubspaceAlignment(spike_conv, evoked_axes, win_f, step_f, cfg.fs, nDims);
-fn_plotAlignmentTimeseries(al_t, al_v, chance_lvl, t_P9, t_evoked_start, t_C2, t_recovery_start, ...
-    cfg.motor_buffer_s, cfg.recovery_delay_s, nDims, cfg.slide_win_s, cfg.recording_ID, cfg.FIGURES_DIR);
+%fn_plotAlignmentTimeseries(al_t, al_v, chance_lvl, t_P9, t_evoked_start, t_C2, t_recovery_start, ...
+%    cfg.motor_buffer_s, cfg.recovery_delay_s, nDims, cfg.slide_win_s, cfg.recording_ID, cfg.FIGURES_DIR);
 
 %% =========================================================================
 %  SECTION 5a - RECURRENCE DENSITY ANALYSIS 
@@ -185,9 +185,9 @@ RQA_ev.RR = ev_recur_density; %#ok<STRNU>
 RQA_re.RR = re_recur_density; %#ok<STRNU>
 cross_rr_mean = cross_recur_density; %#ok<NASGU>
 
-fn_plotRecurrenceSummary(traj_ev, t_ev_ax, traj_re, t_re_ax, R_ev, R_re, ...
-    ev_recur_density, re_recur_density, cross_recur_density, recurs_ev_in_re, ...
-    epsilon_rr, cfg.recording_ID, cfg.FIGURES_DIR);
+%fn_plotRecurrenceSummary(traj_ev, t_ev_ax, traj_re, t_re_ax, R_ev, R_re, ...
+%    ev_recur_density, re_recur_density, cross_recur_density, recurs_ev_in_re, ...
+%    epsilon_rr, cfg.recording_ID, cfg.FIGURES_DIR);
 
 %% =========================================================================
 %  SECTION 5b - EPOCH DETECTION VIA RECURRENCE DENSITY
@@ -232,7 +232,7 @@ if any(idx_rec_lock)
 end
 fprintf('Cross-recurrence density: %.3f\n', cross_recur_density);
 
-fn_plotEpochDetection(onset, return_, t_P9, t_C2, t_end, cfg.ONSET_RATIO, cfg.recording_ID, cfg.FIGURES_DIR);
+%fn_plotEpochDetection(onset, return_, t_P9, t_C2, t_end, cfg.ONSET_RATIO, cfg.recording_ID, cfg.FIGURES_DIR);
 
 % Preserve original variable names for the saved results file
 onset_win_t = onset.win_t; onset_win_v = onset.win_v; onset_win_v_fixed = onset.win_v_fixed; %#ok<NASGU>
@@ -258,9 +258,9 @@ align_mat_rr = fn_epochAlignmentMatrix(WPCA_rr, nDims);
 fprintf('  Alignment E->R [RR-defined]: %.3f  |  [fixed]: %.3f  |  Chance: %.3f\n', ...
     align_mat_rr(2,3), align_mat(2,3), chance_lvl);
 
-fn_plotAttractorComparison(PR_norm, PR_norm_rr, win_labels, ...
-    align_mat(2,3), align_mat_rr(2,3), chance_lvl, ...
-    ev_recur_density, re_recur_density, cross_recur_density, cfg.recording_ID, cfg.FIGURES_DIR);
+%fn_plotAttractorComparison(PR_norm, PR_norm_rr, win_labels, ...
+%    align_mat(2,3), align_mat_rr(2,3), chance_lvl, ...
+%    ev_recur_density, re_recur_density, cross_recur_density, cfg.recording_ID, cfg.FIGURES_DIR);
     
 %% =========================================================================
 %  SECTION 6 - DYNAMICAL EPOCHS (cycle-by-cycle jPCA subspace alignment)
