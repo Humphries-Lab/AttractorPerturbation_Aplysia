@@ -157,34 +157,59 @@ end
 %% Figure
 if ~isempty(figDir)
     try
-        fig = figure('Color', 'w', 'Position', [100 100 1000 420], 'Visible', 'off');
-        set(fig, 'DefaultAxesFontName', 'Arial', 'DefaultTextFontName', 'Arial');
-        ax1 = subplot(1, 2, 1); hold(ax1, 'on');
-        plot(ax1, z(:,1), z(:,2), '-', 'Color', [0.8 0.8 0.8]);
-        cols = lines(max(numel(stim), 2));
+        deg   = char(176);
+        scale = prctile(sqrt(sum(z.^2, 2)), 99);
+        zn    = z / scale;                      % arbitrary units
+        lim   = 1.08 * max(abs(zn(:)));
+        pal   = [0 114 178; 213 94 0; 0 158 115; 204 121 167] / 255;   % colour-blind-safe
+        cols  = pal(mod((1:numel(stim)) - 1, 4) + 1, :);
+
+        fig = figure('Color', 'w', 'Position', [80 80 980 460], 'Visible', 'on');
+
+        % A - trajectory in the rotational plane; the cycle containing each stimulus in colour
+        axA = axes('Position', [0.08 0.14 0.40 0.76]); hold(axA, 'on');
+        plot(axA, zn(:,1), zn(:,2), '-', 'Color', [0.80 0.80 0.80], 'LineWidth', 0.7);
         for k = 1:numel(stim)
             if isnan(stim(k).cycle), continue; end
             cc = stim(k).cycle;
             b1 = min(max(sb(cc), 1), nb); b2 = min(max(sb(cc+1), 1), nb);
-            plot(ax1, z(b1:b2,1), z(b1:b2,2), '-', 'Color', cols(k,:), 'LineWidth', 1.8);
             bs = min(max(floor((stim(k).t - t0) / dt) + 1, 1), nb);
-            plot(ax1, z(bs,1), z(bs,2), 'v', 'MarkerFaceColor', cols(k,:), 'MarkerEdgeColor', 'k', 'MarkerSize', 9);
-            text(ax1, z(bs,1), z(bs,2), ['  ' stim(k).name], 'FontSize', 10);
+            plot(axA, zn(b1:b2,1), zn(b1:b2,2), '-', 'Color', cols(k,:), 'LineWidth', 2.2);
+            plot(axA, zn(bs,1), zn(bs,2), 'v', 'MarkerFaceColor', cols(k,:), 'MarkerEdgeColor', 'k', 'MarkerSize', 11);
+            text(axA, zn(bs,1), zn(bs,2), ['   ' stim(k).name], 'Color', cols(k,:), 'FontWeight', 'bold', ...
+                'FontSize', 11, 'VerticalAlignment', 'middle');
         end
-        axis(ax1, 'equal'); xlabel(ax1, 'jPC1'); ylabel(ax1, 'jPC2');
-        title(ax1, 'Cycle containing each stimulus');
-        pax = polaraxes('Position', [0.55 0.12 0.38 0.76]); hold(pax, 'on');
+        axis(axA, 'equal'); xlim(axA, [-lim lim]); ylim(axA, [-lim lim]);
+        set(axA, 'XTick', [], 'YTick', [], 'Box', 'off', 'LineWidth', 1, 'FontSize', 10);
+        xlabel(axA, 'jPC1 (a.u.)'); ylabel(axA, 'jPC2 (a.u.)');
+
+        % B - angle of the population state in the plane at each stimulus
+        pax = polaraxes('Position', [0.58 0.12 0.36 0.76]); hold(pax, 'on');
+        polarplot(pax, linspace(0, 2*pi, 200), ones(1, 200), '-', 'Color', [0.85 0.85 0.85]);
         for k = 1:numel(stim)
-            polarplot(pax, [stim(k).phase_abs_rad stim(k).phase_abs_rad], [0 1], '-', 'Color', cols(k,:), 'LineWidth', 2);
-            polarscatter(pax, stim(k).phase_abs_rad, 1, 60, cols(k,:), 'filled');
-            text(pax, stim(k).phase_abs_rad, 1.12, stim(k).name, 'HorizontalAlignment', 'center');
+            a = stim(k).phase_abs_rad;
+            polarplot(pax, [a a], [0 1], '-', 'Color', cols(k,:), 'LineWidth', 2.5);
+            polarplot(pax, a, 1, 'o', 'MarkerFaceColor', cols(k,:), 'MarkerEdgeColor', 'k', 'MarkerSize', 9);
+            text(pax, a, 1.2, sprintf('%s  %.0f%s', stim(k).name, stim(k).phase_abs_deg, deg), ...
+                'Color', cols(k,:), 'FontWeight', 'bold', 'HorizontalAlignment', 'center', 'FontSize', 10);
         end
-        rlim(pax, [0 1.2]); pax.RTickLabel = {};
-        title(pax, 'Stimulus angle in the jPC plane');
-        sgtitle(sprintf('Stimulus phase (jPC plane) | %s', recID), 'FontName', 'Arial');
+        pax.RLim = [0 1.3]; pax.RTickLabel = {}; pax.RGrid = 'off';
+        pax.ThetaTick = 0:90:270; pax.FontSize = 10;
+
+        annotation(fig, 'textbox', [0.01 0.88 0.04 0.09], 'String', 'A', 'EdgeColor', 'none', ...
+            'FontSize', 16, 'FontWeight', 'bold');
+        annotation(fig, 'textbox', [0.52 0.88 0.04 0.09], 'String', 'B', 'EdgeColor', 'none', ...
+            'FontSize', 16, 'FontWeight', 'bold');
+
+        set(findall(fig, '-property', 'FontName'), 'FontName', 'Arial');
+        drawnow;
         fn = fullfile(figDir, '06e_stimulus_phase_jpc.png');
-        try, exportgraphics(fig, fn, 'Resolution', 300); catch, print(fig, fn, '-dpng', '-r300'); end
-        close(fig);
+        try
+            exportgraphics(fig, fn, 'Resolution', 600);
+            exportgraphics(fig, strrep(fn, '.png', '.pdf'), 'ContentType', 'vector');
+        catch
+            print(fig, fn, '-dpng', '-r300');
+        end
     catch MEp
         warning('fn_stimulusPhaseJPC:PlotFailed', 'Phase figure skipped: %s', MEp.message);
     end
