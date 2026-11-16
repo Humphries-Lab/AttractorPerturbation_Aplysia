@@ -19,7 +19,7 @@ cmap = lines(max(nG, 1));
 bnd  = dyn.ep_bounds(2:end, 1);     % manual protocol epoch starts (Evoked, Perturbed, Recovery)
 red  = [0.85 0.1 0.1]; gry = [0.45 0.45 0.45];
 
-fig = figure('Name', 'Dynamical epochs', 'Position', [100 100 1400 800], 'Visible', 'off');
+fig = figure('Name', 'Dynamical epochs', 'Position', [100 100 1400 800], 'Visible', 'on');
 
 % (a) cycle-by-cycle alignment
 subplot(2,2,1);
@@ -69,12 +69,6 @@ for g = 1:nG, hL(g) = patch(NaN, NaN, cmap(g,:)); end
 legend(hL, arrayfun(@(g) sprintf('Cluster %d', g), 1:nG, 'UniformOutput', false), 'Location', 'eastoutside');
 set(gca, 'YTick', []); xlabel('Time (s)'); box on;
 title('Dynamical epochs (cycle clusters)');
-sub = {'Red: stimuli. Grey dotted: manual epoch starts (labels only)'};
-idxR = find(strcmp(dyn.landmarks.name, 'start of Recovery'), 1);
-if ~isempty(idxR) && ~isnan(dyn.landmarks.lag_to_nearest_change_s(idxR))
-    sub{end+1} = sprintf('Nearest cluster change to the Recovery start: %+.0f s', dyn.landmarks.lag_to_nearest_change_s(idxR));
-end
-subtitle(sub, 'FontSize', 8);
 
 % (c) cluster x protocol epoch counts
 subplot(2,2,3);
@@ -103,10 +97,6 @@ set(gca, 'XTick', 1:nE, 'XTickLabel', dyn.ep_labels, 'YTick', 1:nE, 'YTickLabel'
 title('Mean alignment between epochs (diagonal = within)');
 
 sgtitle(sprintf('Dynamical epochs (jPCA cycles) | %s', recording_ID), 'Interpreter', 'none');
-annotation(fig, 'textbox', [0.05 0.002 0.9 0.03], 'String', ...
-    ['White lines in (a): start of Evoked, Perturbed (C2) and Recovery. Grey dotted lines in (b): start of Evoked (P9 + buffer) and ' ...
-     'Recovery (C2 + delay). These are manual protocol labels, not estimates of when the perturbation ends.'], ...
-    'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 9);
 exportgraphics(fig, fullfile(figuresDir, '06_dynamical_epochs.png'), 'Resolution', 500);
-close(fig);
+drawnow;   % figure stays open on screen
 end
