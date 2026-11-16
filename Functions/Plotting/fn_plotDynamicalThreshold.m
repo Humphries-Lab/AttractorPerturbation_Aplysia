@@ -1,5 +1,5 @@
 function fn_plotDynamicalThreshold(dyn, recording_ID, figuresDir) %#ok<INUSD>
-% FN_PLOTDYNAMICALTHRESHOLD  Change points and similarity threshold.
+% FN_PLOTDYNAMICALTHRESHOLD  Change points and similarity threshold (publication layout).
 %   A  Distribution of pairwise cycle alignment, same- vs different-cluster pairs,
 %      with the shuffle-chance level (95th percentile) and the separating threshold.
 %   B  Dynamical epochs (runs of one cluster) along time; black lines = cluster change points;
@@ -16,7 +16,7 @@ blue = [0.1 0.3 0.7]; gry = [0.5 0.5 0.5]; red = [0.8 0.1 0.1];
 st = dyn.sim_thresh; pr = dyn.pairs;
 nG = dyn.nGroups; cmap = lines(max(nG, 1));
 
-fig = figure('Name', 'Dynamical epochs: threshold', 'Position', [100 100 1500 430], 'Visible', 'off');
+fig = figure('Name', 'Dynamical epochs: threshold', 'Position', [100 100 1500 430], 'Visible', 'on');
 
 % A - pairwise alignment
 ax1 = subplot(1,3,1); hold on;
@@ -76,8 +76,6 @@ for g = 1:nG, hL(g) = patch(NaN, NaN, cmap(g,:), 'EdgeColor', 'none'); end
 lgd = legend(hL, arrayfun(@(g) sprintf('%d', g), 1:nG, 'UniformOutput', false), ...
     'Location', 'southoutside', 'Orientation', 'horizontal', 'Box', 'off', 'FontSize', 9);
 title(lgd, 'Cluster');
-title('Black lines: cluster change points. Grey strip: protocol epochs (labels only)', ...
-    'FontWeight', 'normal', 'FontSize', 9);
 set(gca, 'YTick', []); xlabel('Time (s)'); box on;
 
 % C - alignment vs time between cycles
@@ -105,13 +103,12 @@ end
 if ~isempty(hp), legend(hp, lp, 'Location', 'northeast', 'Box', 'off', 'FontSize', 9); end
 xlabel('Time between cycles (s)'); ylabel('Subspace alignment'); ylim([0 1]);
 if hasFit
-    title({sprintf('Evoked-Recovery: %.2f observed, %.2f from the same-epoch fit', dyn.drift.obs_ER, dyn.drift.pred_ER), ...
-           sprintf('(%.0f%% of Evoked-Recovery pairs lie beyond the fitted time lags)', 100 * dyn.drift.frac_extrapolated)}, ...
+    title(sprintf('Evoked-Recovery: %.2f observed, %.2f expected', dyn.drift.obs_ER, dyn.drift.pred_ER), ...
         'FontWeight', 'normal', 'FontSize', 10);
 end
 
 fn_formatAxes(fig, 'Arial', 10);
 fn_letterAxes([ax1 ax2 ax3], 14, 'Arial');
 exportgraphics(fig, fullfile(figuresDir, '06b_dynamical_threshold.png'), 'Resolution', 500);
-close(fig);
+drawnow;   % figure stays open on screen
 end
